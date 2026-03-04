@@ -102,10 +102,10 @@ import SwiftUI
 /// When you need to parse something other than Markdown, use ``init(_:parser:)`` with a custom
 /// ``MarkupParser`` implementation.
 public struct StructuredText: View {
-  @State private var attributedString = AttributedString()
+  @State private var attributedString: AttributedString
 
   private let markup: String
-  private let parser: any MarkupParser
+  private let parser: (any MarkupParser)?
 
   /// Creates a structured-text view by parsing `markup` with a custom parser.
   ///
@@ -113,6 +113,19 @@ public struct StructuredText: View {
   public init(_ markup: String, parser: any MarkupParser) {
     self.markup = markup
     self.parser = parser
+    self._attributedString = State(initialValue: AttributedString())
+  }
+
+  /// Creates a structured-text view from a pre-parsed `AttributedString`.
+  ///
+  /// Use this initializer when you have already parsed your content into an `AttributedString`,
+  /// for example to avoid re-parsing on every scroll in a `List` or `LazyVStack`.
+  /// The attributed string must contain `PresentationIntent` attributes for block-level
+  /// rendering to work correctly.
+  public init(_ attributedString: AttributedString) {
+    self.markup = ""
+    self.parser = nil
+    self._attributedString = State(initialValue: attributedString)
   }
 
   public var body: some View {
@@ -130,6 +143,7 @@ public struct StructuredText: View {
   }
 
   private func markupDidChange(_ markup: String) {
+    guard let parser else { return }
     self.attributedString = (try? parser.attributedString(for: markup)) ?? .init()
   }
 }
